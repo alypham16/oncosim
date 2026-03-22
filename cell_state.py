@@ -58,3 +58,56 @@ class CellState:
         
         return effective_kill
 
+def get_cell_states(cell_line:str) -> dict[str, CellState]:
+    """
+    Returns a dictionary of {surface_marker: CellState} for the supported cell line.
+    For simplicity, the following supported states have hypothetical values. Only the surface-marker
+    partitions (i.e. ESAM for MDA-MB-231, tetherin for MDA-MB-436) have been experimentally confirmed
+    to help define subpopulations in lab.
+
+    """
+
+    ### Maybe make this so that users can change these based on their own experimental data?
+
+    preset_cell_states = {
+        "MDA-MB-231": {
+            "ESAM high": CellState(
+                name = "ESAM high",
+                proliferation_rate = 0.5,
+                drug_resistance = 0.15,
+                ec50 = 0.8,
+                max_kill_rate = 0.55,
+                transitions = {"ESAM low": 0.03}),
+                
+            "ESAM low": CellState(
+                name = "ESAM low",
+                proliferation_rate = 0.3,
+                drug_resistance = 0.65,
+                ec50 = 2.5,
+                max_kill_rate = 0.55,
+                transitions = {"ESAM high": 0.01})
+        },
+
+        "MDA-MB-436": {
+            "BST2 high": CellState(
+                name = "BST2 high",
+                proliferation_rate = 0.5,
+                drug_resistance = 0.2,
+                ec50 = 1.0,
+                max_kill_rate = 0.6,
+                transitions = {"non-BST2": 0.025}),
+
+            "BST2 low": CellState(
+                name = "BST2 low",
+                proliferation_rate = 0.28,
+                drug_resistance = 0.70,
+                ec50 = 3.0,
+                max_kill_rate = 0.6,
+                transitions = {"BST2 high": 0.008})
+        }
+    }
+
+    if cell_line not in preset_cell_states:
+        raise ValueError(f"Unsupported cell line: {cell_line}. Supported cell lines are: {list(preset_cell_states.keys())}")
+    
+    return preset_cell_states[cell_line]
