@@ -4,6 +4,7 @@ OncoSim (tentative name) is a computational tool used to simulate population dyn
 ## Current Files
 - README.md: This file, used to describe the contents and mechanics of the project. Will include future set-up requirements as the project is built.
 - Dockerfile: a Dockerfile containerizing the code
-- backend.py: basic backend code to build the project.
+- cell_state.py: basic cell population definitions
+- drug_models.py: defining how drugs will affect the cell population dynamics.
 
 Names, contents, etc. of the repository are subject to change as OncoSim is built. 
