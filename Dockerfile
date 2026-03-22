@@ -5,5 +5,3 @@ COPY . /code
 WORKDIR /code
 
 RUN pip install numpy pandas scipy scikit-learn matplotlib seaborn
-
-CMD ["python", "main.py"]
