@@ -1,10 +1,9 @@
 """
-Defining the properties of each cell subpopulation.
+Defining the properties of each cell subpopulation. 
 """
 
-from dataclasses import dataclass
+import json
 
-@dataclass
 class CellState:
     """
     A class representing the properties of a single marker-defined subpopulation.
@@ -49,7 +48,7 @@ class CellState:
 
         if drug_concentration <= 0:
             return 0
-
+    
        # Implement Hill equation
         drug_effect = self.max_kill_rate * (drug_concentration / (self.ec50 + drug_concentration))
         
@@ -58,16 +57,66 @@ class CellState:
         
         return effective_kill
 
-def get_cell_states(cell_line:str) -> dict[str, CellState]:
+def validate_states(states: dict[str, CellState]) -> None:
     """
-    Returns a dictionary of {surface_marker: CellState} for the supported cell line.
+    Validates the properties of the cell states to ensure they are within reasonable bounds.
+    
+    Parameters:
+    states (dict[str, CellState]): A dictionary of cell states to validate.
+    
+    Raises:
+    ValueError: If any of the properties of the cell states are out of bounds.
+    """
+    for state_name, state in states.items():
+        if not (0 <= state.proliferation_rate <= 1):
+            raise ValueError(f"Proliferation rate for state '{state_name}' must be between 0 and 1.")
+        if not (0 <= state.drug_resistance <= 1):
+            raise ValueError(f"Drug resistance for state '{state_name}' must be between 0 and 1.")
+        if state.ec50 < 0:
+            raise ValueError(f"EC50 for state '{state_name}' must be non-negative.")
+        if not (0 <= state.max_kill_rate <= 1):
+            raise ValueError(f"Max kill rate for state '{state_name}' must be between 0 and 1.")
+        total_transition_prob = sum(state.transitions.values())
+        if total_transition_prob > 1:
+            raise ValueError(f"Total transition probabilities for state '{state_name}' cannot exceed 1.")
+
+def json_load_cell_states(json_file: str) -> dict[str, CellState]:
+    """
+    Loads and validated user-inputted cell states from a JSON file.
+    
+    Parameters:
+    json_file (str): The path to the JSON file containing the cell state definitions.
+    
+    Returns:
+    dict[str, CellState]: A dictionary of cell states loaded from the JSON file.
+    """
+    with open(json_file, 'r') as f:
+        data = json.load(f)
+    
+    cell_states = {}
+    for state_name, properties in data.items():
+        cell_states[state_name] = CellState(
+            name=state_name,
+            proliferation_rate=properties['proliferation_rate'],
+            drug_resistance=properties['drug_resistance'],
+            ec50=properties['ec50'],
+            max_kill_rate=properties['max_kill_rate'],
+            transitions=properties['transitions']
+        )
+    
+    validate_states(cell_states)
+    return cell_states
+    
+def get_cell_states(cell_line:str) -> dict[str, CellState]:
+    
+    """
+    Returns a dictionary of built-in preset states in {surface_marker: CellState} for the supported cell line.
     For simplicity, the following supported states have hypothetical values. Only the surface-marker
     partitions (i.e. ESAM for MDA-MB-231, tetherin for MDA-MB-436) have been experimentally confirmed
     to help define subpopulations in lab.
 
-    """
 
-    ### Maybe make this so that users can change these based on their own experimental data?
+    """
 
     preset_cell_states = {
         "MDA-MB-231": {
@@ -109,5 +158,8 @@ def get_cell_states(cell_line:str) -> dict[str, CellState]:
 
     if cell_line not in preset_cell_states:
         raise ValueError(f"Unsupported cell line: {cell_line}. Supported cell lines are: {list(preset_cell_states.keys())}")
+    states = preset_cell_states[cell_line]
+    validate_states(states)
     
-    return preset_cell_states[cell_line]
+    return states
+

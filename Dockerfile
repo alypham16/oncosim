@@ -4,4 +4,4 @@ COPY . /code
 
 WORKDIR /code
 
-RUN pip install numpy pandas scipy scikit-learn matplotlib seaborn
+RUN pip install -- no-cache-dir -r requirements.txt

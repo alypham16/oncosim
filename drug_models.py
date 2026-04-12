@@ -15,7 +15,6 @@ class DrugProtocol:
     treatment_end: float
 
 
-## WIP WIP WIP WIP
 def drug_time_points(self, treatment_end: float) -> list[float]:
     """
     Provides drug simulation time points according to the protocol?? user input??
@@ -27,3 +26,26 @@ def drug_time_points(self, treatment_end: float) -> list[float]:
             end = self.treatment_end
         else:
             end = treatment_end
+
+def concentration_ode(t: float, C: float, protocol: DrugProtocol) -> float:
+    """
+    ODE right-hand side for the drug compartment (called by the solver
+    between dose events).
+ 
+    dC/dt = -k_elim * C
+ 
+    Parameters
+    ----------
+    t : float
+        Current time (days) — unused here but required by solve_ivp signature.
+    C : float
+        Current drug concentration (µM).
+    protocol : DrugProtocol
+        Treatment parameters.
+ 
+    Returns
+    -------
+    float
+        Rate of change of concentration.
+    """
+    return -protocol.elimination_rate * C
