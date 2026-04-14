@@ -37,9 +37,9 @@ def concentration_ode(t: float, C: float, protocol: DrugProtocol) -> float:
     Parameters
     ----------
     t : float
-        Current time (days) — unused here but required by solve_ivp signature.
+        Current time (days): unused here but required by solve_ivp signature.
     C : float
-        Current drug concentration (µM).
+        Current drug concentration in micromolar.
     protocol : DrugProtocol
         Treatment parameters.
  

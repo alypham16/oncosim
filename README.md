@@ -15,3 +15,5 @@ docker run --rm -v $(pwd)/output:/app/output tumor-sim
 - drug_models.py: defining how drugs will affect the cell population dynamics.
 
 Names, contents, etc. of the repository are subject to change as OncoSim is built. 
+
+## AI Usage

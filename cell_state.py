@@ -3,6 +3,9 @@ Defining the properties of each cell subpopulation.
 """
 
 import json
+from dataclasses import dataclass, field
+
+@dataclass
 
 class CellState:
     """
