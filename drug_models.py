@@ -20,7 +20,6 @@ def drug_time_points(self, treatment_end: float) -> list[float]:
     Provides drug simulation time points according to the protocol?? user input??
     
     """
-
     if self.dose_times:
         if self.treatment_end is not None:
             end = self.treatment_end
@@ -35,7 +34,6 @@ def concentration_ode(t: float, C: float, protocol: DrugProtocol) -> float:
     dC/dt = -k_elim * C
  
     Parameters
-    ----------
     t : float
         Current time (days): unused here but required by solve_ivp signature.
     C : float
@@ -44,7 +42,6 @@ def concentration_ode(t: float, C: float, protocol: DrugProtocol) -> float:
         Treatment parameters.
  
     Returns
-    -------
     float
         Rate of change of concentration.
     """
