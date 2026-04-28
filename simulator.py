@@ -1,53 +1,34 @@
-"""
-Primary population dynamics simulation code (mathematical model).
-Returns a history of cell counts for each state over time, in days.
-"""
-
 import numpy as np
+from scipy.optimize import curve_fit
 
-def simulation(
-        states: dict,
-        initial_counts: dict,
-        drug_name: str,
-        dose: float,
-        dose_interval_days: float,
-        carrying_capacity: float,
-        duration_days = 30) -> dict:
-    
-    counts = {name: float(initial_counts.get(name, 0)) for name in states}
-    carrying_capacity = 1000000 # max total cells the simulator can handle
- 
-    history = {name: [] for name in states}
-    history["days"] = list(range(duration_days + 1))
- 
-    for _ in range(duration_days):
-        total = sum(counts.values())
-        new_counts = {}
+def logistic(t, r, K, N0):
+    t = np.array(t)
+    return K / (1 + ((K - N0) / max(N0, 1e-6)) * np.exp(-r * t))
 
-        for name, state in states.items():
-            n = counts[name]
- 
-            # Mimics logistic growth model with a carrying capacity.
-            growth = state.proliferation_rate * n * (1 - total / carrying_capacity)
- 
-            # Drug kills some cells
-            cells_killed = state.effective_kill_rate(dose) * n
-            
-            # Accounting for transition states
-            leaving = sum(state.transitions.values()) * n
-            arriving = sum(
-                states[other].transitions.get(name, 0) * counts[other]
-                for other in states if other != name)
- 
-            new_counts[name] = max(0, n + growth - cells_killed - leaving + arriving)
- 
-        counts = new_counts
-        for name in states:
-            history[name].append(round(counts[name]))
- 
-    # Initial values
-    for name in states:
-        history[name] = [initial_counts.get(name, 0)] + history[name]
- 
-    return history
- 
+
+def fit_logistic(time, counts):
+    time = np.array(time)
+    counts = np.array(counts)
+
+    N0 = counts[0]
+
+    popt, _ = curve_fit(
+        lambda t, r, K: logistic(t, r, K, N0),
+        time,
+        counts,
+        bounds=(0, [5.0, 1e7])
+    )
+
+    r, K = popt
+    return {"r": float(r), "K": float(K), "N0": float(N0)}
+
+
+def simulate_future(params, days=30, drug=0):
+    t = np.arange(0, days)
+
+    # drug reduces growth rate
+    r = params["r"] * (1 - 0.3 * drug)
+
+    y = logistic(t, r, params["K"], params["N0"])
+
+    return {"days": t.tolist(), "counts": y.tolist()}
