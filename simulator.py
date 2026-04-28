@@ -22,8 +22,8 @@ def simulation(
  
     for _ in range(duration_days):
         total = sum(counts.values())
- 
         new_counts = {}
+
         for name, state in states.items():
             n = counts[name]
  
@@ -31,8 +31,8 @@ def simulation(
             growth = state.proliferation_rate * n * (1 - total / carrying_capacity)
  
             # Drug kills some cells
-            cells_killed = state.kill_rate(dose) * n
- 
+            cells_killed = state.effective_kill_rate(dose) * n
+            
             # Accounting for transition states
             leaving = sum(state.transitions.values()) * n
             arriving = sum(

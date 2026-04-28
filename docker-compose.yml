@@ -1,0 +1,21 @@
+---
+services:
+    redis:
+        image: redis:8
+        volumes:
+            - ./data:/datadocker 
+        user: "1000:1000"
+        ports:
+            - 6379:6379
+    dash:
+        build:
+            context: ./
+            dockerfile: ./Dockerfile
+        depends_on:
+            - redis
+        image: alypham16/oncosim:0.1.0
+        user: "1000:1000"
+        ports:
+          - 8050:8050
+        command:
+            "python3 app.py"

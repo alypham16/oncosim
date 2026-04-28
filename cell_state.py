@@ -32,7 +32,6 @@ class CellState:
     drug_resistance: float
     ec50: float
     max_kill_rate: float
-    transitions: dict[str, float]  # transition probabilities to other states
 
     def effective_kill_rate(self, drug_concentration: float) -> float:
         """
@@ -79,9 +78,6 @@ def validate_states(states: dict[str, CellState]) -> None:
             raise ValueError(f"EC50 for state '{state_name}' must be non-negative.")
         if not (0 <= state.max_kill_rate <= 1):
             raise ValueError(f"Max kill rate for state '{state_name}' must be between 0 and 1.")
-        total_transition_prob = sum(state.transitions.values())
-        if total_transition_prob > 1:
-            raise ValueError(f"Total transition probabilities for state '{state_name}' cannot exceed 1.")
 
 def json_load_cell_states(json_file: str) -> dict[str, CellState]:
     """
@@ -117,7 +113,6 @@ def get_cell_states(cell_line:str) -> dict[str, CellState]:
     For simplicity, the following supported states have hypothetical values. Only the surface-marker
     partitions (i.e. ESAM for MDA-MB-231, tetherin for MDA-MB-436) have been experimentally confirmed
     to help define subpopulations in lab.
-
 
     """
 
