@@ -28,8 +28,8 @@ def fit_logistic(time: list, counts: list) -> dict:
     - A dictionary containing the fitted parameters 'r' (growth rate) and 'K'
     (carrying capacity), as well as 'N0' (initial cell count).
     """
-    time = np.array(time, dtype=float)
-    counts = np.array(counts, dtype=float)
+    time = np.array(time, dtype = float)
+    counts = np.array(counts, dtype = float)
     N0 = max(counts[0], 1e-6)
 
     def model(t: np.ndarray, r: float, K: float) -> np.ndarray:

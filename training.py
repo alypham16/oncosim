@@ -9,7 +9,7 @@ from sklearn.linear_model import LogisticRegression
 
 BASE_DIR = Path(__file__).resolve().parent
 
-DATA_PATH = BASE_DIR / "data" / "tnbc_ic50vals.csv"
+DATA_PATH = BASE_DIR / "data" / "GDSC_data.csv"
 MODEL_PATH = BASE_DIR / "model" / "model.pkl"
 
 
@@ -52,10 +52,7 @@ def load_data():
 
     df["drug"] = df["drug"].str.lower()
     df["cell_line"] = df["cell_line"].str.upper()
-
-    # use provided log IC50 directly
     df["log_ic50"] = df["ln_ic50"]
-
     df = df[df["drug"].isin(drug_map.keys())]
 
     cell_line_alias = {
@@ -73,7 +70,7 @@ def load_data():
 
     df = df.dropna(subset=["drug_id", "cell_id"])
 
-    # define resistance using log_ic50
+    # define resistance using log_ic50 and the drug-specific median
     df["resistance"] = df.groupby("drug")["log_ic50"].transform(
         lambda x: (x > x.median()).astype(int)
     )
@@ -84,6 +81,12 @@ def generate_features(df: pd.DataFrame, samples_per_condition = 300) -> tuple[np
     """
     Generates synthetic features for training the resistance prediction 
     model due to lack of available real samples from the dataset.
+
+    Due to limited experience on what to do without enough samples,
+    ChatGPT was used to help generate this function and with guidance on how to 
+    deal with the lack of samples by prompting it with the issue and requesting
+    how to generate synthetic data based on the existing real samples.
+    AI was used for lines 105-120.
 
     Parameters:
     - df: A pandas DataFrame containing the prepared dataset.
@@ -99,9 +102,7 @@ def generate_features(df: pd.DataFrame, samples_per_condition = 300) -> tuple[np
 
     for _, row in df.iterrows():
         for _ in range(samples_per_condition):
-
             r = np.clip(rng.normal(0.5, 0.15), 0.05, 1.5)
-
             K = rng.lognormal(mean = 10, sigma = 1)
             K = np.clip(K, 1e4, 1e7)
 
@@ -117,7 +118,6 @@ def generate_features(df: pd.DataFrame, samples_per_condition = 300) -> tuple[np
                 int(row["cell_id"]),
                 row["log_ic50"]
             ])
-
             y.append(label)
 
     return np.array(X), np.array(y)
