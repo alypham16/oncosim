@@ -2,33 +2,53 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 def logistic(t, r, K, N0):
-    t = np.array(t)
-    return K / (1 + ((K - N0) / max(N0, 1e-6)) * np.exp(-r * t))
-
+    return K / (1 + ((K - N0) / N0) * np.exp(-r * t))
 
 def fit_logistic(time, counts):
-    time = np.array(time)
-    counts = np.array(counts)
+    time = np.array(time, dtype=float)
+    counts = np.array(counts, dtype=float)
 
-    N0 = counts[0]
+    # safety: prevent divide-by-zero
+    N0 = max(counts[0], 1e-6)
+
+    def model(t, r, K):
+        return logistic(t, r, K, N0)
 
     popt, _ = curve_fit(
-        lambda t, r, K: logistic(t, r, K, N0),
+        model,
         time,
         counts,
-        bounds=(0, [5.0, 1e7])
+        bounds=(0, [5.0, 1e7]),
+        maxfev=10000
     )
 
     r, K = popt
-    return {"r": float(r), "K": float(K), "N0": float(N0)}
 
+    return {
+        "r": float(r),
+        "K": float(K),
+        "N0": float(N0)
+    }
 
-def simulate_future(params, days=30, drug=0):
-    t = np.arange(0, days)
+def simulate(params, drug, resistance, hours=48):
+    r = params["r"] / 24  # convert daily growth rate → hourly
 
-    # drug reduces growth rate
-    r = params["r"] * (1 - 0.3 * drug)
+    K = params["K"]
+    N0 = params["N0"]
 
-    y = logistic(t, r, params["K"], params["N0"])
+    t = np.arange(hours)
 
-    return {"days": t.tolist(), "counts": y.tolist()}
+    sensitive = logistic(t, r, K, N0)
+    resistant = logistic(
+        t,
+        r * (0.3 + 0.7 * resistance),
+        K,
+        N0 * 0.2
+    )
+
+    return {
+        "hours": t.tolist(),
+        "sensitive": sensitive.tolist(),
+        "resistant": resistant.tolist(),
+        "total": (sensitive + resistant).tolist()
+    }

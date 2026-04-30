@@ -1,25 +1,56 @@
 from dash import Dash, html, dcc, Input, Output, State
 import plotly.graph_objects as go
 
-from backend import fit_and_store, get_fit, predict, simulate
+from backend import fit_and_store, get_fit, predict_resistance, run_simulation
 
 app = Dash()
 server = app.server
 
-
 app.layout = html.Div([
-    html.H2("Cell Growth Simulator"),
+    html.H2("TNBC Cell Population Growth and Drug Resistance Simulator"),
+    html.H4("Enter time points (hours) and cell counts to fit the growth model."),
+    html.H4("Then select a chemotherapeutic drug, TNBC cell line, and exposure type to predict resistance and simulate growth under treatment."),
 
-    html.Label("Time"),
-    dcc.Input(id="time", value="0,1,2,3,4,5"),
+    html.Label("Time (hours)"),
+    dcc.Input(id = "time", value = "0,4,8,12,16"),
 
-    html.Label("Counts"),
-    dcc.Input(id="counts", value="1000,2000,4000,7000,9000,10000"),
+    html.Label("Cell Counts"),
+    dcc.Input(id = "counts", value = "1000,2000,4000,7000,9000"),
+
+    html.Label("Cell Line"),
+    dcc.Dropdown(
+        id = "cell_line",
+        options = [
+            {"label": "MDA-MB-231", "value": "231"},
+            {"label": "MDA-MB-436", "value": "436"},
+            {"label": "HCC1806", "value": "1806"}
+        ],
+        value="231"
+    ),
 
     html.Label("Drug"),
-    dcc.Slider(id="drug", min=0, max=5, step=0.1, value=1),
+    dcc.Dropdown(
+        id = "drug",
+        options = [
+            {"label": "Doxorubicin", "value": "doxorubicin"},
+            {"label": "Vincristine", "value": "vincristine"},
+            {"label": "Paclitaxel", "value": "paclitaxel"},
+        ],
+        value="doxorubicin"
+    ),
 
-    html.Button("Run", id="btn"),
+    html.Label("Exposure Type"),
+    dcc.Dropdown(
+        id = "exposure",
+        options = [
+            {"label": "Continuous", "value": "cont"},
+            {"label": "Pulsed", "value": "pulse"},
+            {"label": "One-step", "value": "one"},
+        ],
+        value = "cont"
+    ),
+
+    html.Button("Run", id = "btn", n_clicks = 0),
 
     html.Div(id="prediction"),
     dcc.Graph(id="graph")
@@ -33,45 +64,43 @@ app.layout = html.Div([
     State("time", "value"),
     State("counts", "value"),
     State("drug", "value"),
+    State("cell_line", "value"),
+    State("exposure", "value"),
     prevent_initial_call=True
 )
 
-def run(_, time_str, count_str, drug):
+def run(_, time_str, count_str, drug, cell_line, exposure):
 
     time = list(map(float, time_str.split(",")))
     counts = list(map(float, count_str.split(",")))
 
-    # 1. FIT + STORE IN REDIS
-    params = fit_and_store(time, counts)
+    if len(time) != len(counts):
+        return {}, "Error: time and counts must match"
 
-    # 2. READ BACK FROM REDIS
+    params = fit_and_store(time, counts)
     stored = get_fit()
 
-    # 3. ML PREDICTION
-    label = predict(stored, drug)
+    resistance = predict_resistance(stored, drug, cell_line, exposure)
 
-    # 4. SIMULATION
-    sim = simulate(stored, drug=drug)
+    sim = run_simulation(stored, drug, resistance, exposure)
 
-    # 5. PLOT
     fig = go.Figure()
 
-    # raw data
-    fig.add_trace(go.Scatter(
-        x=time,
-        y=counts,
-        mode="markers+lines",
-        name="User Data"
-    ))
+    fig.add_trace(go.Scatter(x = time, y = counts, mode = "markers", name = "Data"))
 
-    # fitted curve
-    fig.add_trace(go.Scatter(
-        x=sim["days"],
-        y=sim["counts"],
-        mode="lines",
-        name="Logistic Fit (Model)"
-    ))
-    return fig, "Resistant" if label else "Sensitive"
+    fig.add_trace(go.Scatter(x = sim["hours"], y = sim["sensitive"], name = "Sensitive"))
+
+    fig.add_trace(go.Scatter(x = sim["hours"], y = sim["resistant"], name = "Resistant"))
+
+    fig.add_trace(go.Scatter(x = sim["hours"], y = sim["total"], name = "Total"))
+
+    fig.update_layout(
+        xaxis_title = "Time (hours)",
+        yaxis_title = "Cell Count")
+
+    label = "Resistant-dominant" if resistance else "Sensitive-dominant"
+
+    return fig, f"Prediction: {label}"
 
 
 if __name__ == "__main__":
