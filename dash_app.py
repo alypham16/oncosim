@@ -9,7 +9,7 @@ server = app.server
 app.layout = html.Div([
     html.H2("TNBC Cell Population Growth and Drug Resistance Simulator"),
     html.H4("Enter time points (hours) and cell counts to fit the growth model."),
-    html.H4("Then select a chemotherapeutic drug, TNBC cell line, and exposure type to predict resistance and simulate growth under treatment."),
+    html.H4("Then select a chemotherapeutic drug and TNBC cell line to predict resistance and simulate growth under treatment."),
 
     html.Label("Time (hours)"),
     dcc.Input(id = "time", value = "0,4,8,12,16"),
@@ -24,7 +24,7 @@ app.layout = html.Div([
             {"label": "MDA-MB-231", "value": "231"},
             {"label": "MDA-MB-468", "value": "468"},
             {"label": "HCC1806", "value": "1806"},
-            {"label": "BT-49", "value": "549"}
+            {"label": "BT-549", "value": "549"}
         ],
         value="231"
     ),
@@ -45,10 +45,10 @@ app.layout = html.Div([
         value="cisplatin"
     ),
 
-    html.Button("Run", id = "btn", n_clicks = 0),
+    html.Button("Run", id = "btn"),
 
-    html.Div(id="prediction"),
-    dcc.Graph(id="graph")
+    html.Div(id = "prediction"),
+    dcc.Graph(id = "graph")
 ])
 
 
@@ -60,10 +60,24 @@ app.layout = html.Div([
     State("counts", "value"),
     State("drug", "value"),
     State("cell_line", "value"),
-    prevent_initial_call=True
+    prevent_initial_call = True
 )
 
-def run(_, time_str, count_str, drug, cell_line):
+def run(_, time_str: str, count_str: str, drug: str, cell_line: str):
+    """
+    Callback function that parses user input, fits logistic growth model,
+    predicts drug resistance, runs simulation, and updates the graph and prediction text.
+
+    Parameters:
+    - time_str: String input of comma-separated time points in hours.
+    - count_str: String input of comma-separated cell counts corresponding to the time points.
+    - drug: String representing the selected therapeutic drug.
+    - cell_line: String representing the selected TNBC cell line.
+
+    Returns:
+    - fig: A Plotly figure object containing the original data points and simulated growth curves for sensitive, resistant, and total cell populations.
+    - label: A string containing the predicted probability of drug resistance.
+    """
 
     time = list(map(float, time_str.split(",")))
     counts = list(map(float, count_str.split(",")))
@@ -74,9 +88,8 @@ def run(_, time_str, count_str, drug, cell_line):
     params = fit_and_store(time, counts)
     stored = get_fit()
 
-    resistance = float(predict_resistance(stored, drug, cell_line))
-
-    sim = run_simulation(stored, drug, resistance)
+    resistance = predict_resistance(stored, drug, cell_line)
+    sim = run_simulation(stored, drug, cell_line, resistance)
 
     fig = go.Figure()
 
