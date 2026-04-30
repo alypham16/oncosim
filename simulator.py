@@ -8,18 +8,17 @@ def fit_logistic(time, counts):
     time = np.array(time, dtype=float)
     counts = np.array(counts, dtype=float)
 
-    # safety: prevent divide-by-zero
     N0 = max(counts[0], 1e-6)
 
     def model(t, r, K):
         return logistic(t, r, K, N0)
-
+    
     popt, _ = curve_fit(
         model,
         time,
         counts,
-        bounds=(0, [5.0, 1e7]),
-        maxfev=10000
+        bounds = (0, [5.0, 1e7]),
+        maxfev = 10000
     )
 
     r, K = popt
@@ -30,8 +29,8 @@ def fit_logistic(time, counts):
         "N0": float(N0)
     }
 
-def simulate(params, drug, resistance, hours=48):
-    r = params["r"] / 24  # convert daily growth rate → hourly
+def simulate(params, resistance, hours = 168): # typical logistic growth curve for TNBC cells
+    r = params["r"]
 
     K = params["K"]
     N0 = params["N0"]
@@ -41,7 +40,7 @@ def simulate(params, drug, resistance, hours=48):
     sensitive = logistic(t, r, K, N0)
     resistant = logistic(
         t,
-        r * (0.3 + 0.7 * resistance),
+        r * (0.3 + 0.7 * float(resistance)),
         K,
         N0 * 0.2
     )

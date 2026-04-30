@@ -22,8 +22,9 @@ app.layout = html.Div([
         id = "cell_line",
         options = [
             {"label": "MDA-MB-231", "value": "231"},
-            {"label": "MDA-MB-436", "value": "436"},
-            {"label": "HCC1806", "value": "1806"}
+            {"label": "MDA-MB-468", "value": "468"},
+            {"label": "HCC1806", "value": "1806"},
+            {"label": "BT-49", "value": "549"}
         ],
         value="231"
     ),
@@ -32,22 +33,16 @@ app.layout = html.Div([
     dcc.Dropdown(
         id = "drug",
         options = [
-            {"label": "Doxorubicin", "value": "doxorubicin"},
-            {"label": "Vincristine", "value": "vincristine"},
+            {"label": "Cisplatin", "value": "cisplatin"},
+            {"label": "Docetaxel", "value": "docetaxel"},
+            {"label": "Olaparib", "value": "olaparib"},
             {"label": "Paclitaxel", "value": "paclitaxel"},
+            {"label": "Gemcitabine", "value": "gemcitabine"},
+            {"label": "Talazoparib", "value": "talazoparib"},
+            {"label": "Epirubicin", "value": "epirubicin"},
+            {"label": "Cyclophosphamide", "value": "cyclophosphamide"}
         ],
-        value="doxorubicin"
-    ),
-
-    html.Label("Exposure Type"),
-    dcc.Dropdown(
-        id = "exposure",
-        options = [
-            {"label": "Continuous", "value": "cont"},
-            {"label": "Pulsed", "value": "pulse"},
-            {"label": "One-step", "value": "one"},
-        ],
-        value = "cont"
+        value="cisplatin"
     ),
 
     html.Button("Run", id = "btn", n_clicks = 0),
@@ -65,11 +60,10 @@ app.layout = html.Div([
     State("counts", "value"),
     State("drug", "value"),
     State("cell_line", "value"),
-    State("exposure", "value"),
     prevent_initial_call=True
 )
 
-def run(_, time_str, count_str, drug, cell_line, exposure):
+def run(_, time_str, count_str, drug, cell_line):
 
     time = list(map(float, time_str.split(",")))
     counts = list(map(float, count_str.split(",")))
@@ -80,9 +74,9 @@ def run(_, time_str, count_str, drug, cell_line, exposure):
     params = fit_and_store(time, counts)
     stored = get_fit()
 
-    resistance = predict_resistance(stored, drug, cell_line, exposure)
+    resistance = float(predict_resistance(stored, drug, cell_line))
 
-    sim = run_simulation(stored, drug, resistance, exposure)
+    sim = run_simulation(stored, drug, resistance)
 
     fig = go.Figure()
 
@@ -98,7 +92,7 @@ def run(_, time_str, count_str, drug, cell_line, exposure):
         xaxis_title = "Time (hours)",
         yaxis_title = "Cell Count")
 
-    label = "Resistant-dominant" if resistance else "Sensitive-dominant"
+    label = f"Resistance probability: {resistance:.2f}"
 
     return fig, f"Prediction: {label}"
 
